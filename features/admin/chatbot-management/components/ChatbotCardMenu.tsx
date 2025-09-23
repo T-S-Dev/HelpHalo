@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart, Copy, Edit, ExternalLink, MoreVertical, Power, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -12,38 +13,52 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
-import { BASE_URL } from "@/graphql/apolloClient";
+import { BASE_URL } from "@/shared/lib/constants";
 
+import deleteChatbotAction from "@/features/admin/shared/actions/delete-chatbot.action";
 import DeleteConfirmationDialog from "@/features/admin/shared/components/DeleteConfirmationDialog";
-import { useDeleteChatbot, useToggleChatbotStatus } from "@/features/admin/shared/hooks/useChatbotActions";
 import { useCopyToClipboard } from "@/features/admin/shared/hooks/useCopyToClipboard";
 
 import type { ChatbotSummary } from "@/types/client";
+import { toggleChatbotStatusAction } from "../actions/toggle-chatbots-status.action";
 
 export default function ChatbotCardMenu({ chatbot }: { chatbot: ChatbotSummary }) {
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const router = useRouter();
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletePending, startDeleteTransition] = useTransition();
+
+  const [isTogglePending, startToggleTransition] = useTransition();
+
   const { copyToClipboard } = useCopyToClipboard({ showToast: true });
   const chatbotLink = `${BASE_URL}/chatbot/${chatbot.id}`;
 
-  const { deleteChatbot, deleteLoading } = useDeleteChatbot();
-  const { toggleStatus, toggleLoading } = useToggleChatbotStatus();
-
-  const handleSessions = () => {
-    router.push(`/view-chatbot-sessions/${chatbot.id}`);
+  const handleDelete = () => {
+    startDeleteTransition(async () => {
+      const result = await deleteChatbotAction(chatbot.id);
+      if (result.success) {
+        toast.success(result.data.message);
+      } else {
+        toast.error(result.error);
+      }
+    });
   };
 
-  const handleCopy = () => {
-    copyToClipboard(chatbotLink);
+  const handleToggle = () => {
+    startToggleTransition(async () => {
+      const result = await toggleChatbotStatusAction(chatbot.id, chatbot.isActive);
+      if (result.success) {
+        toast.success(result.data.message);
+      } else {
+        toast.error(result.error);
+      }
+    });
   };
 
-  const handleView = () => {
-    window.open(`/chatbot/${chatbot.id}`, "_blank");
-  };
-
-  const handleEdit = () => {
-    router.push(`/edit-chatbot/${chatbot.id}`);
-  };
+  const handleSessions = () => router.push(`/view-chatbot-sessions/${chatbot.id}`);
+  const handleCopy = () => copyToClipboard(chatbotLink);
+  const handleView = () => window.open(chatbotLink, "_blank");
+  const handleEdit = () => router.push(`/edit-chatbot/${chatbot.id}`);
 
   return (
     <>
@@ -71,13 +86,13 @@ export default function ChatbotCardMenu({ chatbot }: { chatbot: ChatbotSummary }
             <Edit className="mr-2 h-4 w-4" />
             Edit
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={toggleLoading} onClick={() => toggleStatus(chatbot.id, chatbot.isActive)}>
+          <DropdownMenuItem disabled={isTogglePending} onClick={handleToggle}>
             <Power className="mr-2 h-4 w-4" />
             Toggle status
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            disabled={deleteLoading}
+            disabled={isDeletePending}
             onClick={() => setIsDeleteModalOpen(true)}
             className="text-destructive focus:text-destructive focus:bg-destructive/20"
           >
@@ -89,10 +104,10 @@ export default function ChatbotCardMenu({ chatbot }: { chatbot: ChatbotSummary }
       <DeleteConfirmationDialog
         isOpen={isDeleteModalOpen}
         onCancel={() => setIsDeleteModalOpen(false)}
-        onDelete={() => deleteChatbot(chatbot.id)}
+        onDelete={handleDelete}
         resourceName="Chatbot"
         resourceDisplayName={chatbot.name}
-        deleteLoading={deleteLoading}
+        deleteLoading={isDeletePending}
       />
     </>
   );

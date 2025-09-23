@@ -1,9 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import { BarChart, Check, Copy, Edit, ExternalLink, Users } from "lucide-react";
 
 import { Button } from "@/shared/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/shared/components/ui/card";
-import { BASE_URL } from "@/graphql/apolloClient";
+import { BASE_URL } from "@/shared/lib/constants";
 import { formatTimestamp } from "@/shared/lib/utils";
 
 import ChatbotStatusBadge from "@/features/admin/shared/components/ChatbotStatusBadge";

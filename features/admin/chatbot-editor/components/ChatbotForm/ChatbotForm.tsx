@@ -15,8 +15,8 @@ const ChatbotForm = ({ isEditing = false, initialData }: Props) => {
     <div className="flex flex-col gap-4">
       <ChatbotFormBasicInfo isEditing={isEditing} initialData={initialData} />
 
-      {isEditing && (
-        <ChatbotFormCharacteristics chatbotId={initialData?.id} characteristics={initialData?.characteristics} />
+      {isEditing && initialData?.id && (
+        <ChatbotFormCharacteristics chatbotId={initialData.id} characteristics={initialData.characteristics} />
       )}
     </div>
   );
