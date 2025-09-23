@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@apollo/client";
+import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -9,68 +8,35 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { CREATE_CHATBOT_CHARACTERISTIC } from "@/graphql/mutations";
-import { GET_CHATBOT_BY_ID } from "@/graphql/queries";
-import { tryCatch } from "@/lib/tryCatch";
 
 import Characteristic from "./Characteristic";
+import addCharacteristic from "../../actions/add-characteristic.action";
 
 import type { ChatbotCharacteristic } from "@/types/client";
 
 type Props = {
-  chatbotId?: string;
+  chatbotId: string;
   characteristics?: ChatbotCharacteristic[];
 };
 
 export default function ChatbotFormCharacteristics({ chatbotId, characteristics }: Props) {
   const [newCharacteristic, setNewCharacteristic] = useState<string>("");
 
-  const [addCharacteristic] = useMutation(CREATE_CHATBOT_CHARACTERISTIC, {
-    update: (cache, { data: { createChatbotCharacteristic } }) => {
-      const existingData: any = cache.readQuery({
-        query: GET_CHATBOT_BY_ID,
-        variables: { id: chatbotId },
-      });
-
-      if (existingData && existingData.chatbot) {
-        cache.writeQuery({
-          query: GET_CHATBOT_BY_ID,
-          variables: { id: chatbotId },
-          data: {
-            chatbot: {
-              ...existingData.chatbot,
-              characteristics: [...existingData.chatbot.characteristics, createChatbotCharacteristic],
-            },
-          },
-        });
-      }
-    },
-    optimisticResponse: {
-      createChatbotCharacteristic: {
-        __typename: "ChatbotCharacteristic",
-        id: "temp-id-" + Math.random().toString(36),
-        chatbotId: chatbotId,
-        content: newCharacteristic,
-      },
-    },
-  });
+  const [isAddPending, startAddTransition] = useTransition();
 
   const handleAddCharacteristic = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!newCharacteristic || !chatbotId) return;
+    if (!newCharacteristic.trim()) return;
+    const contentToAdd = newCharacteristic;
     setNewCharacteristic("");
 
-    const [, error] = await tryCatch(
-      addCharacteristic({
-        variables: {
-          chatbotId,
-          content: newCharacteristic,
-        },
-      }),
-    );
-
-    if (error) toast.error("Failed to add characteristic");
+    startAddTransition(async () => {
+      const result = await addCharacteristic(chatbotId, contentToAdd);
+      if (!result.success) {
+        toast.error(result.error);
+        setNewCharacteristic(contentToAdd);
+      }
+    });
   };
 
   return (
@@ -91,19 +57,20 @@ export default function ChatbotFormCharacteristics({ chatbotId, characteristics 
             value={newCharacteristic}
             onChange={(e) => setNewCharacteristic(e.target.value)}
           />
-          <Button type="submit" className="flex items-center gap-2" disabled={!newCharacteristic || !chatbotId}>
+          <Button type="submit" className="flex items-center gap-2" disabled={!newCharacteristic || isAddPending}>
             <Plus />
             Add
           </Button>
         </form>
 
-        <div className="flex flex-col-reverse gap-1">
-          <AnimatePresence>
-            {characteristics?.map((characteristic: ChatbotCharacteristic, index) => (
+        <div className="flex flex-col gap-1">
+          <AnimatePresence initial={false}>
+            {characteristics?.map((characteristic: ChatbotCharacteristic) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: -20, height: 0 }}
+                key={characteristic.id}
+                initial={{ opacity: 1, y: -20, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
                 transition={{ duration: 0.25 }}
               >
                 <Characteristic characteristic={characteristic} />
