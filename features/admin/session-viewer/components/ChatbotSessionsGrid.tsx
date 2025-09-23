@@ -6,6 +6,7 @@ import { useQueryState } from "nuqs";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 
 import SearchInput from "@/features/admin/shared/components/SearchInput";
+
 import SessionCard from "./ChatbotSessionCard";
 
 import type { ChatbotSessionSummary } from "@/types/client";

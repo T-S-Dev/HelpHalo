@@ -6,6 +6,7 @@ import { useQueryState } from "nuqs";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
 
 import SearchInput from "@/features/admin/shared/components/SearchInput";
+
 import ChatbotCard from "./ChatbotCard";
 import StatusFilter from "./StatusFilter";
 
