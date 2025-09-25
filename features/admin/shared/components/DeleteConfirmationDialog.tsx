@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ type Props = {
   resourceName: string;
   resourceDisplayName: string;
   deleteLoading: boolean;
+  requireTextConfirm?: boolean;
 };
 
 export default function DeleteConfirmationDialog({
@@ -31,6 +32,7 @@ export default function DeleteConfirmationDialog({
   resourceName,
   resourceDisplayName,
   deleteLoading,
+  requireTextConfirm = true,
 }: Props) {
   const [inputValue, setInputValue] = useState("");
 
@@ -44,6 +46,10 @@ export default function DeleteConfirmationDialog({
     setInputValue("");
   };
 
+  const isDisabled =
+    deleteLoading ||
+    (requireTextConfirm && inputValue !== resourceDisplayName);
+
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
       <DialogContent>
@@ -53,23 +59,28 @@ export default function DeleteConfirmationDialog({
             <DialogTitle>Delete {resourceName}</DialogTitle>
           </div>
           <DialogDescription>
-            This action cannot be undone. This will permanently delete <strong>{resourceDisplayName}</strong>.
+            This action cannot be undone. This will permanently delete{" "}
+            <strong>{resourceDisplayName}</strong>.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="confirm" className="block">
-              To confirm, type <strong>{resourceDisplayName}</strong> below
-            </Label>
-            <Input
-              id="confirm"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="mt-2"
-              placeholder={resourceDisplayName}
-            />
+
+        {requireTextConfirm && (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="confirm" className="block">
+                To confirm, type <strong>{resourceDisplayName}</strong> below
+              </Label>
+              <Input
+                id="confirm"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="mt-2"
+                placeholder={resourceDisplayName}
+              />
+            </div>
           </div>
-        </div>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel}>
             Cancel
@@ -77,7 +88,7 @@ export default function DeleteConfirmationDialog({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={inputValue !== resourceDisplayName || deleteLoading}
+            disabled={isDisabled}
           >
             {deleteLoading ? "Deleting..." : `Delete ${resourceName}`}
           </Button>
