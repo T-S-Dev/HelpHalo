@@ -37,9 +37,16 @@ export default async function ViewChatbotSessionsPage({ params, searchParams }: 
     return <ErrorAlert message="Failed to load chatbot sessions. Please try again." />;
   }
 
-  const { chatbotName, totalPages } = chatSessionsData;
+  const { chatbotName, sessions, totalPages } = chatSessionsData;
 
-  const sessions = chatSessionsData.sessions.map((session) => ({
+  if (sessions.length === 0 && currentPage > 1) {
+    const newParams = new URLSearchParams(resolvedSearchParams);
+    // Navigate to the new last page, or page 1 if all items were deleted.
+    newParams.set("page", totalPages > 0 ? totalPages.toString() : "1");
+    redirect(`/view-chatbot-sessions/${chatbotId}?${newParams.toString()}`);
+  }
+
+  const serializedSessions = chatSessionsData.sessions.map((session) => ({
     ...session,
     lastAt: session.lastAt.toISOString(),
   }));
@@ -56,7 +63,7 @@ export default async function ViewChatbotSessionsPage({ params, searchParams }: 
         </div>
       </div>
 
-      <ChatbotSessionsGrid sessions={sessions} />
+      <ChatbotSessionsGrid sessions={serializedSessions} />
 
       <PaginationControls currentPage={currentPage} totalPages={totalPages} />
     </div>
