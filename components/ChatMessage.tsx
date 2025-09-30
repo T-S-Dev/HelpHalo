@@ -12,7 +12,7 @@ const ChatMessage = ({ message }: { message: Message }) => {
   const isUser = message.sender === "USER";
 
   return (
-    <div className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
+    <div data-message-id={message.id} className={`flex w-full ${isUser ? "justify-end" : "justify-start"}`}>
       <div className="flex max-w-[80%] gap-3">
         <div className={`flex-shrink-0 ${isUser ? "order-2" : "order-1"}`}>
           <div className="bg-primary/10 flex h-8 w-8 items-center justify-center rounded-full">
