@@ -35,8 +35,8 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
     notFound();
   }
 
-  const [initialMessagesResult, messagesError] = await tryCatch(
-    sessionId ? getSessionMessages(sessionId) : Promise.resolve([]),
+  const [messagesResult, messagesError] = await tryCatch(
+    sessionId ? getSessionMessages(sessionId) : Promise.resolve({ messages: [], nextCursor: null }),
   );
 
   if (sessionId && messagesError) {
@@ -44,13 +44,20 @@ export default async function ChatbotPage({ params }: { params: Promise<{ id: st
     return <SessionError chatbotId={chatbot.id} />;
   }
 
-  const initialMessages = initialMessagesResult
-    ? initialMessagesResult.map((m) => ({
+  const initialMessages = messagesResult
+    ? messagesResult.messages.map((m) => ({
         ...m,
         createdAt: m.createdAt.toISOString(),
         updatedAt: m.updatedAt.toISOString(),
       }))
     : [];
 
-  return <ChatContainer chatbot={chatbot} initialChatSessionId={sessionId} initialMessages={initialMessages} />;
+  return (
+    <ChatContainer
+      chatbot={chatbot}
+      initialChatSessionId={sessionId}
+      initialMessages={initialMessages}
+      initialNextCursor={messagesResult?.nextCursor ?? null}
+    />
+  );
 }
